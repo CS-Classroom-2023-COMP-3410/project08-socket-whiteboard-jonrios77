@@ -38,35 +38,26 @@ document.addEventListener('DOMContentLoaded', () => {
   const socket = io('http://localhost:3000');
 
   // TODO: Set up Socket.IO event handlers
-  socket.on('connect', () => {
+  socket.on('connect', function() {
     connectionStatus.textContent = 'Connected';
-    connectionStatus.className = 'connected'; // Applies the green color from your CSS
+    connectionStatus.className = 'connected';
   });
 
-  socket.on('disconnect', () => {
-    connectionStatus.textContent = 'Disconnected';
-    connectionStatus.className = ''; 
-  });
-
-  // Displays and updates the user count (Requirement 4)
-  socket.on('currentUsers', (count) => {
+  socket.on('currentUsers', function(count) {
     userCount.textContent = count;
   });
 
-  // Receives existing board state (Requirement 2 / Hint 5)
-  socket.on('boardState', (state) => {
+  socket.on('boardState', function(state) {
     boardStateHistory = state;
     redrawCanvas(boardStateHistory);
   });
 
-  // Listens for drawing from others (Requirement 1 / Hint 2)
-  socket.on('draw', (drawData) => {
+  socket.on('draw', function(drawData) {
     boardStateHistory.push(drawData);
     drawLine(drawData.x0, drawData.y0, drawData.x1, drawData.y1, drawData.color, drawData.size);
   });
 
-  // Listens for clear action (Requirement 3)
-  socket.on('clear', () => {
+  socket.on('clear', function() {
     boardStateHistory = [];
     context.clearRect(0, 0, canvas.width, canvas.height);
   });
@@ -75,7 +66,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // TODO: Add event listeners for mouse events (mousedown, mousemove, mouseup, mouseout)
   canvas.addEventListener('mousedown', startDrawing);
   canvas.addEventListener('mousemove', draw);
-  window.addEventListener('mouseup', stopDrawing);
+  canvas.addEventListener('mouseup', stopDrawing);
   canvas.addEventListener('mouseout', stopDrawing);
 
   // Touch support (optional)
@@ -91,24 +82,26 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Update brush size display
   // TODO: Add event listener for brush size input changes
-  brushSizeInput.addEventListener('input', (e) => {
+  brushSizeInput.addEventListener('input', function(e) {
     brushSizeDisplay.textContent = e.target.value;
   });
 
   function startDrawing(e) {
     // TODO: Set isDrawing to true and capture initial coordinates
     isDrawing = true;
-    const coords = getCoordinates(e);
+    var coords = getCoordinates(e);
     lastX = coords.x;
     lastY = coords.y;
   }
 
   function draw(e) {
     // TODO: If not drawing, return
-    if (!isDrawing) return;
+    if (isDrawing == false) {
+      return;
+    }
 
     // TODO: Get current coordinates
-    const coords = getCoordinates(e);
+    var coords = getCoordinates(e);
 
     // TODO: Emit 'draw' event to the server with drawing data
     socket.emit('draw', {
@@ -132,9 +125,8 @@ document.addEventListener('DOMContentLoaded', () => {
     context.lineTo(x1, y1);
     context.strokeStyle = color;
     context.lineWidth = size;
-    context.lineCap = 'round'; // Makes lines look smooth
+    context.lineCap = 'round';
     context.stroke();
-    context.closePath();
   }
 
   function stopDrawing() {
@@ -147,20 +139,22 @@ document.addEventListener('DOMContentLoaded', () => {
     socket.emit('clear');
   }
 
-  function redrawCanvas(state = []) {
+  function redrawCanvas(state) {
     // TODO: Clear the canvas
     context.clearRect(0, 0, canvas.width, canvas.height);
     // TODO: Redraw all lines from the board state
-    state.forEach(data => {
+    for (var i = 0; i < state.length; i++) {
+      var data = state[i];
       drawLine(data.x0, data.y0, data.x1, data.y1, data.color, data.size);
-    });
+    }
   }
 
+  // Helper function to get coordinates from mouse or touch event
   function getCoordinates(e) {
     // TODO: Extract coordinates from the event (for both mouse and touch events)
     // HINT: For touch events, use e.touches[0]
-    if (e.touches && e.touches.length > 0) {
-      const rect = canvas.getBoundingClientRect();
+    if (e.touches) {
+      var rect = canvas.getBoundingClientRect();
       return {
         x: e.touches[0].clientX - rect.left,
         y: e.touches[0].clientY - rect.top
@@ -173,6 +167,7 @@ document.addEventListener('DOMContentLoaded', () => {
     };
   }
 
+  // Handle touch events
   function handleTouchStart(e) {
     // TODO: Prevent default behavior and call startDrawing
     e.preventDefault();
